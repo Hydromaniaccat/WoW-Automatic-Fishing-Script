@@ -1,10 +1,9 @@
-﻿;window size
-xMin = 400
+﻿xMin = 400
 xMax = 2000
 yMin = 300
 yMax = 1000
 
-fishColor = 0xBF93BC;0xF0A09F
+fishColor = 0x450C0B
 colorVariation = 30
 gameTitle = World of Warcraft
 
@@ -16,76 +15,147 @@ $F1::
 	return
 	
 $F7::
-	gosub lure
-	
 	loop
 		{
 		Random, time_key, 60, 100
-		SetKeyDelay, time_key
+		SetKeyDelay, %time_key%
 		
 		WinActivate, %gameTitle%
 		
-		nextTime := A_Min
-		nextTime -= currentTime
-		if(nextTime < 0){
-			nextTime += 60
-		}
-		if(nextTime >= 11){
-			gosub lure
-		}
-		
-		send, 7 ;PUT FISHING ABILITY INTO SLOT 7
-		Random, time_beforeFish, 1000, 1250 ;FISHING CAST TIME
-		sleep, time_beforeFish
+		send, 7 
+		Random, time_beforeFish, 2000, 2250 
+		sleep, %time_beforeFish%
 		gosub fish
-		Random, time_betweenFish, 1000, 1250 ;FISH LOOT TIME
-		sleep, time_betweenFish
-		}
+		Random, time_betweenFish, 1300, 1250 
+		sleep, %time_betweenFish%
+        
+        WinGetPos, x1, y1, Width, Height, Program Manager        
+        ImageSearch, x2, y2, x1, y1, Width, Height, *80 miniClam.bmp
+        
+        If (ErrorLevel=0)	{
+            send, {Shift Down}
+
+            Random, small_wait, 10, 30
+            sleep, %small_wait%
+            
+            Mousemove, %x2%,%y2%,30
+            
+            Random, small_wait, 10, 30
+            sleep, %small_wait%
+            
+            mouseclick, right, x2, y2
+            
+            Random, small_wait, 10, 30
+            sleep, %small_wait%
+            
+            send, {Shift Up}
+            
+            Random, small_wait, 10, 30
+            sleep, %small_wait%
+        }
+    }
 	exitapp
 	
-	lure: ;SUBROUTINE
-		Random, time_key, 60, 100
-		sleep time_key
+	fish: 
+        Random, time_key, 2000, 2200
+		sleep, %time_key%
+        
+        PixelSearch, Px, Py, %xMin%, %yMin%, %xMax%, %yMax%, %fishColor%, %colorVariation%, fast
+        Py := Py + 5
+        Px := Px + 5
+        Mousemove, %Px%,%Py%,50
+        PixelGetColor target_color, %Px%, %Py%, RGB
+        
+        time1:=A_Tickcount
+        
+        loop {
+            PixelGetColor color, %Px%, %Py%, RGB
+            
+            tr := format("{:d}","0x" . substr(target_color,3,2))
+            tg := format("{:d}","0x" . substr(target_color,5,2))
+            tb := format("{:d}","0x" . substr(target_color,7,2))
+            
+            pr := format("{:d}","0x" . substr(color,3,2))
+            pg := format("{:d}","0x" . substr(color,5,2))
+            pb := format("{:d}","0x" . substr(color,7,2))
+            
+            distance := sqrt((tr-pr)**2+(tg-pg)**2+(pb-tb)**2)
+            if(distance>70)
+            {
+                ;msgbox %distance%
+                Random, small_wait, 50, 80
+                send, {Shift Down}
+		
+                Random, small_wait, 10, 30
+                sleep, %small_wait%
+                
+                mouseclick, right
+                
+                Random, small_wait, 10, 30
+                sleep, %small_wait%
+                
+                send, {Shift Up}
+                
+                break
+            }
+            
+            time2:=A_Tickcount
+            delta:=floor((time2-time1)/1000)
+            if(delta >= 20){
+                Random, small_wait, 50, 80
+                send, {Shift Down}
+		
+                Random, small_wait, 10, 30
+                sleep, %small_wait%
+                
+                mouseclick, right
+                
+                Random, small_wait, 10, 30
+                sleep, %small_wait%
+                
+                send, {Shift Up}
+                
+                break
+            }
 
-		send, 3 ;APPLY LURE ABILITY INTO SLOT 3
-		Random, time_cast, 3000, 4000
-		sleep time_cast
-		
-		currentTime := A_Min
-		return
-	
-	fish: ;SUBROUTINE
-		PixelSearch, Px, Py, %xMin%, %yMin%, %xMax%, %yMax%, %fishColor%, %colorVariation%, fast
-		Mousemove, %Px%,%Py%,50
-		
-		Random, time_waitDelay, 8000, 9000 ;FISHING REEL TIME
-		sleep, time_waitDelay
-		
-		send, {Shift Down}
-		
-		Random, time_key, 60, 100
-		sleep, time_key
-		
-		mouseclick, right
-		
-		Random, time_key, 60, 100
-		sleep, time_key
-		
-		send, {Shift Up}
-		
-		Random, time_key, 60, 100
-		sleep, time_key
+            sleep, 10
+        }
 		
 		return
+
+$F8::
+    MouseGetPos, X, Y
+    PixelGetColor color, %X%, %Y%, RGB
+            
+    tr := format("{:d}","0x" . substr(fishColor,3,2))
+    tg := format("{:d}","0x" . substr(fishColor,5,2))
+    tb := format("{:d}","0x" . substr(fishColor,7,2))
+    
+    pr := format("{:d}","0x" . substr(color,3,2))
+    pg := format("{:d}","0x" . substr(color,5,2))
+    pb := format("{:d}","0x" . substr(color,7,2))
+    
+    distance := sqrt((tr-pr)**2+(tg-pg)**2+(pb-tb)**2)
+     
+    msgbox, %color%
+    msgbox, %distance%
+    return
+
 
 $F4::
 	MouseGetPos X, Y 
 	PixelGetColor Color, %X%, %Y%, RGB
 	fishColor = %Color%
 	return
+    
+$F6::
+	PixelSearch, Px, Py, %xMin%, %yMin%, %xMax%, %yMax%, %fishColor%, %colorVariation%, fast
+    Mousemove, %Px%,%Py%,50   
+    return
 	
 $F5::
-	MsgBox, Selected color: %fishColor%`nx={%xMin%,%xMax%} y={%yMin%,%yMax%}
+    MouseGetPos X, Y
+	MsgBox, Selected color: %fishColor%`nx={%xMin%,%xMax%} y={%yMin%,%yMax%} `nMousePos={%X%,%Y%}
 	return
 	
 $F2::
@@ -99,3 +169,31 @@ $F3::
 	xMax = %xpos%
 	yMax = %ypos%
 	return
+    
+$F9::
+    WinGetPos, x1, y1, Width, Height, Program Manager
+    CoordMode, mouse, Screen
+    ImageSearch, x2, y2, x1, y1, Width, Height, *100 miniClam.bmp
+    If (ErrorLevel=0)	{
+        Random, small_wait, 50, 80
+        send, {Shift Down}
+
+        Random, small_wait, 10, 30
+        sleep, %small_wait%
+        
+        Mousemove, %x2%,%y2%,60
+        
+        Random, small_wait, 10, 30
+        sleep, %small_wait%
+        
+        mouseclick, right, x2, y2
+        
+        Random, small_wait, 10, 30
+        sleep, %small_wait%
+        
+        send, {Shift Up}
+        
+        Random, small_wait, 10, 30
+        sleep, %small_wait%
+	}
+    return
